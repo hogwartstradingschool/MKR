@@ -1,5 +1,5 @@
 # MKR
-Offline video player + built-in Video Grabber (Android 6.0+).
+Offline video player + built-in Video Grabber (Android 7.0+).
 
 **Grabber kaise use karein**
 1. Kisi bhi app mein video ka link Share karo -> **MKR Player** chuno, ya link copy karke MKR kholo -> **GRABBER** tab -> PASTE.

@@ -70,7 +70,7 @@ final class GrabPanel extends LinearLayout {
             "Oye hoye! Server nu chah pila ke manaa reha aan \u2615",
             "Sabar da fal mitha hunda ae, mein ohnu labb reha aan \uD83D\uDD0D"};
 
-    static String wait() { return WAIT[(int) (Math.random() * WAIT.length)]; }
+    static String waitMsg() { return WAIT[(int) (Math.random() * WAIT.length)]; }
 
     static String findUrl(String s) {
         if (s == null) return null;
@@ -223,7 +223,7 @@ final class GrabPanel extends LinearLayout {
         setting = true;
         et.setText(u);
         setting = false;
-        status(wait() + "  (pehli vaar zara time lagda ae)", true);
+        status(waitMsg() + "  (pehli vaar zara time lagda ae)", true);
         Grab.fetch(u,
                 info -> a.runOnUiThread(() -> {
                     busyUrl = "";
