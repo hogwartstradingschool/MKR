@@ -149,7 +149,10 @@ object Grab {
         val fa = info.optJSONArray("formats") ?: JSONArray()
         val fm = (0 until fa.length()).mapNotNull { fa.optJSONObject(it) }
         val dur = info.optDouble("duration", 0.0).let { if (it.isNaN()) 0.0 else it }
-        val vids = fm.filter { it.optInt("height", 0) > 0 && it.str("vcodec") != "none" }
+        val allV = fm.filter { it.optInt("height", 0) > 0 && it.str("vcodec") != "none" }
+        // purane phone ke liye sirf H.264 (avc1) dikhao; na ho to baaki
+        val avcV = allV.filter { val c = it.str("vcodec"); c.startsWith("avc1") || c.startsWith("h264") }
+        val vids = if (avcV.isNotEmpty()) avcV else allV
         val auds = fm.filter { val a = it.str("acodec"); val v = it.str("vcodec"); a.isNotEmpty() && a != "none" && (v.isEmpty() || v == "none") }
         val aSize = auds.maxOfOrNull { fsize(it, dur) } ?: 0L
         val out = ArrayList<Tier>()
@@ -219,7 +222,10 @@ object Grab {
                     if (h < 0) {
                         rq.addOption("-f", "ba/b"); rq.addOption("-x"); rq.addOption("--audio-format", "m4a")
                     } else {
-                        rq.addOption("-f", if (h > 0) "bv*[height<=$h]+ba/b[height<=$h]/b" else "bv*+ba/b")
+                        // H.264 + AAC pehle (purane phone par bina atke play hoti hai), warna jo mile
+                        rq.addOption("-f", if (h > 0)
+                            "bv*[vcodec^=avc1][height<=$h]+ba[acodec^=mp4a]/bv*[vcodec^=avc1][height<=$h]+ba/bv*[height<=$h]+ba/b[height<=$h]/b"
+                        else "bv*[vcodec^=avc1]+ba[acodec^=mp4a]/bv*+ba/b")
                         rq.addOption("-S", "res,vcodec:h264,acodec:m4a")
                         rq.addOption("--merge-output-format", "mp4")
                     }
@@ -243,11 +249,11 @@ object Grab {
                 j.merging = true
                 j.where = save(j, f)
                 j.pct = 100.0; j.speed = 0.0; j.eta = 0.0; j.merging = false; j.status = "done"
-                GrabService.notifyDone(app, "\u2705 Saved - " + j.where)
+                GrabService.notifyDone(app, "Oey oey! Hogayi aa download \u2705  " + j.where)
             } catch (e: Exception) {
                 if (j.status == "running") {
                     j.status = "error"; j.speed = 0.0; j.merging = false; j.err = msg(e)
-                    GrabService.notifyDone(app, "\u274C Download fail")
+                    GrabService.notifyDone(app, "Oye hoye! Download nahi hoyi \u274C")
                 }
             } finally {
                 mon.interrupt()

@@ -88,6 +88,7 @@ public class MainActivity extends Activity {
     BaseAdapter ad;
     Runnable pend;
     int tab;
+    androidx.swiperefreshlayout.widget.SwipeRefreshLayout srl;
     GrabPanel panel;
     View si;
     TextView[] tabT = new TextView[2];
@@ -120,10 +121,22 @@ public class MainActivity extends Activity {
             public long getItemId(int i) { return i; }
             public View getView(int i, View v, ViewGroup p) { return bind(i, v); }
         };
+        Crash.install(this);
         Grab.attach(this);
         build();
         if (!has() && Build.VERSION.SDK_INT >= 23) requestPermissions(new String[]{perm()}, 1);
         shared(getIntent());
+        final String cr = Crash.take(this);
+        if (cr != null) {
+            TextView ct = new TextView(this);
+            ct.setText(cr);
+            ct.setTextColor(U.BROWN);
+            ct.setTextSize(10);
+            ct.setTextIsSelectable(true);
+            ScrollView cs = limited();
+            cs.addView(ct);
+            sheet("Pichli baar app band hui (error)", cs);
+        }
     }
 
     @Override
@@ -156,7 +169,7 @@ public class MainActivity extends Activity {
             tabT[i].setTextColor(i == t ? U.fg(dark) : U.fg2(dark));
             tabU[i].setBackgroundColor(i == t ? U.BUTTER_D : 0);
         }
-        lv.setVisibility(t == 0 ? View.VISIBLE : View.GONE);
+        srl.setVisibility(t == 0 ? View.VISIBLE : View.GONE);
         panel.setVisibility(t == 1 ? View.VISIBLE : View.GONE);
         if (t == 1) panel.sync();
         refresh();
@@ -392,7 +405,15 @@ public class MainActivity extends Activity {
             toggle(items.get(i));
             return true;
         });
-        body.addView(lv, new FrameLayout.LayoutParams(-1, -1));
+        srl = new androidx.swiperefreshlayout.widget.SwipeRefreshLayout(this);
+        srl.setColorSchemeColors(U.BUTTER_D);
+        srl.setProgressBackgroundColorSchemeColor(dark ? U.STONE2 : 0xFFFFFFFF);
+        srl.addView(lv, new ViewGroup.LayoutParams(-1, -1));
+        srl.setOnRefreshListener(() -> {
+            load();
+            srl.postDelayed(() -> srl.setRefreshing(false), 600);
+        });
+        body.addView(srl, new FrameLayout.LayoutParams(-1, -1));
         empty = new TextView(this);
         empty.setTextColor(U.fg2(dark));
         empty.setTextSize(16);

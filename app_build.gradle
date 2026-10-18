@@ -37,6 +37,7 @@ dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.4'
     implementation 'androidx.media3:media3-exoplayer:1.3.1'
     implementation 'org.jellyfin.media3:media3-ffmpeg-decoder:1.3.1+1'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
     // Video Grabber engine (yt-dlp + ffmpeg)
     implementation 'io.github.junkfood02.youtubedl-android:library:0.17.2'
     implementation 'io.github.junkfood02.youtubedl-android:ffmpeg:0.17.2'

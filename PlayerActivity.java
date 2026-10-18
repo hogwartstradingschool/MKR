@@ -127,6 +127,7 @@ public class PlayerActivity extends Activity implements
     @Override
     protected void onCreate(Bundle s) {
         super.onCreate(s);
+        Crash.install(this);
         sp = getSharedPreferences("s", 0);
         dark = sp.getBoolean("dark", true);
         fg = Color.WHITE;
@@ -278,8 +279,14 @@ public class PlayerActivity extends Activity implements
         setContentView(root);
         imm();
 
+        // Pichli playback beech mein hi mar gayi thi (native crash) => safe mode: sirf phone ke apne decoders
+        if (sp.getBoolean("playing", false)) sp.edit().putBoolean("safe", true).apply();
+        sp.edit().putBoolean("playing", true).apply();
+        boolean safe = sp.getBoolean("safe", false);
+        if (safe) Toast.makeText(this, "Safe mode: phone ke decoder", Toast.LENGTH_SHORT).show();
         DefaultRenderersFactory rf = new DefaultRenderersFactory(this)
-                .setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
+                .setExtensionRendererMode(safe ? DefaultRenderersFactory.EXTENSION_RENDERER_MODE_OFF
+                        : DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON)
                 .setEnableDecoderFallback(true);
         player = new ExoPlayer.Builder(this, rf).build();
         player.setSeekParameters(SeekParameters.CLOSEST_SYNC);
@@ -365,6 +372,9 @@ public class PlayerActivity extends Activity implements
         @Override
         public void onPlayerError(PlaybackException e) {
             Toast.makeText(PlayerActivity.this, "Video play nahi hui (" + e.getErrorCodeName() + ")", Toast.LENGTH_LONG).show();
+            Throwable c = e.getCause();
+            Crash.save(PlayerActivity.this, "PLAYER ERROR: " + e.getErrorCodeName() + "\n" + e.getMessage()
+                    + (c != null ? "\nCause: " + c : "") + "\nFile: " + (idx < names.size() ? names.get(idx) : "?"));
             if (idx + 1 < uris.size()) open(idx + 1);
             else finish();
         }
@@ -793,6 +803,7 @@ public class PlayerActivity extends Activity implements
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        sp.edit().putBoolean("playing", false).apply();
         h.removeCallbacksAndMessages(null);
         try {
             if (le != null) le.release();

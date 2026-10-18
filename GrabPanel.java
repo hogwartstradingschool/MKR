@@ -64,6 +64,14 @@ final class GrabPanel extends LinearLayout {
         }
     };
 
+    static final String[] WAIT = {
+            "Lo g, mein hun labban lagga, file download karan lai tusi zara sabar rakho \uD83D\uDE0E",
+            "Ruk ja bai, link nu zara sungh ke vekh lain dey \uD83D\uDC36",
+            "Oye hoye! Server nu chah pila ke manaa reha aan \u2615",
+            "Sabar da fal mitha hunda ae, mein ohnu labb reha aan \uD83D\uDD0D"};
+
+    static String wait() { return WAIT[(int) (Math.random() * WAIT.length)]; }
+
     static String findUrl(String s) {
         if (s == null) return null;
         Matcher m = URL.matcher(s);
@@ -177,7 +185,7 @@ final class GrabPanel extends LinearLayout {
 
     String summary() {
         int n = Grab.active(), d = Grab.done();
-        if (n == 0 && d == 0) return "Link paste karo ya share karo";
+        if (n == 0 && d == 0) return "Link paa de, baaki mein vekh lainda aan";
         return (n > 0 ? n + " downloading" : "") + (n > 0 && d > 0 ? "  \u2022  " : "") + (d > 0 ? d + " done" : "");
     }
 
@@ -197,7 +205,7 @@ final class GrabPanel extends LinearLayout {
                 s = cd.getItemAt(0).coerceToText(a).toString();
         }
         if (findUrl(s) == null) {
-            status("Clipboard mein koi link nahi mila", false);
+            status("Oye, clipboard taan khali ae! Pehlan link copy kar \uD83D\uDE05", false);
             return;
         }
         go(s);
@@ -207,7 +215,7 @@ final class GrabPanel extends LinearLayout {
     void go(String raw) {
         String u = findUrl(raw);
         if (u == null) {
-            status("Sahi link daalo (https://...)", false);
+            status("Oye! Eh link taan nahi lagda, theek kar ke pao \uD83E\uDD14", false);
             return;
         }
         if (!busyUrl.isEmpty()) return;
@@ -215,7 +223,7 @@ final class GrabPanel extends LinearLayout {
         setting = true;
         et.setText(u);
         setting = false;
-        status("Link check ho raha hai... (pehli baar thora time lagta hai)", true);
+        status(wait() + "  (pehli vaar zara time lagda ae)", true);
         Grab.fetch(u,
                 info -> a.runOnUiThread(() -> {
                     busyUrl = "";
@@ -224,7 +232,7 @@ final class GrabPanel extends LinearLayout {
                 }),
                 err -> a.runOnUiThread(() -> {
                     busyUrl = "";
-                    status(err, false);
+                    status("Oye hoye! Kuj gadbad ho gayi: " + err, false);
                 }));
     }
 
@@ -287,7 +295,7 @@ final class GrabPanel extends LinearLayout {
         }
         ScrollView sv = a.limited();
         sv.addView(c);
-        dg[0] = a.sheet("Download", sv);
+        dg[0] = a.sheet("Ey ley, labb gayi aa! Karley hun download \uD83C\uDF89", sv);
     }
 
     void begin(String url, Grab.Info info, Grab.Tier t) {
@@ -297,7 +305,7 @@ final class GrabPanel extends LinearLayout {
         setting = true;
         et.setText("");
         setting = false;
-        status("Download shuru ho gaya \u2193", false);
+        status("Lo g, download chal pya aa... tusi chah-shah pi lao \u2615", false);
         sync();
         a.sub.setText(summary());
     }
@@ -383,18 +391,18 @@ final class GrabPanel extends LinearLayout {
         String s;
         switch (j.status) {
             case "running":
-                s = j.merging ? q + "  \u2022  Merge ho raha hai..."
+                s = j.merging ? q + "  \u2022  Jod-tod chal rahi aa, bas hon ho gaya..."
                         : q + "  \u2022  " + (int) j.pct + "%  \u2022  " + String.format("%.1f MB/s", j.speed / 1e6)
                         + (j.eta > 0 ? "  \u2022  " + U.t((long) (j.eta * 1000)) : "");
                 break;
             case "done":
-                s = "\u2714 Saved  \u2022  " + j.where;
+                s = "Oey oey! Hogayi aa download \u2714  \u2022  " + j.where;
                 break;
             case "error":
-                s = "\u26A0 " + j.err;
+                s = "Oye hoye! \u26A0 " + j.err;
                 break;
             default:
-                s = "Cancel hua";
+                s = "Cancel kar ditta, koi gal nahi \uD83D\uDE0C";
         }
         r.i.setText(s);
         r.pb.setVisibility(run || j.status.equals("done") ? VISIBLE : GONE);
