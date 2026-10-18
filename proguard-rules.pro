@@ -1,0 +1,14 @@
+-keep class androidx.media3.decoder.ffmpeg.** { *; }
+-keep class androidx.media3.decoder.** { *; }
+-keepclasseswithmembernames class * { native <methods>; }
+-dontwarn org.checkerframework.**
+-dontwarn javax.annotation.**
+-dontwarn com.google.errorprone.annotations.**
+-keep class com.yausername.** { *; }
+-keep class com.fasterxml.jackson.** { *; }
+-keep class com.mkr.player.Grab** { *; }
+-dontwarn com.yausername.**
+-dontwarn com.fasterxml.jackson.**
+-dontwarn org.apache.commons.**
+-dontwarn java.lang.management.**
+-dontwarn javax.lang.model.**
