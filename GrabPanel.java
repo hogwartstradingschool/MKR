@@ -51,12 +51,14 @@ final class GrabPanel extends LinearLayout {
     TextView st;
     ProgressBar spin;
     LinearLayout list;
-    String busyUrl = "";
+    String busyUrl = "", waitText = "";
+    long t0;
     boolean setting;
 
     final Runnable tick = new Runnable() {
         public void run() {
             if (getVisibility() == VISIBLE) {
+                if (!busyUrl.isEmpty()) st.setText(waitText + "  \u23F1 " + (System.currentTimeMillis() - t0) / 1000 + "s");
                 sync();
                 a.sub.setText(summary());
             }
@@ -223,7 +225,9 @@ final class GrabPanel extends LinearLayout {
         setting = true;
         et.setText(u);
         setting = false;
-        status(waitMsg() + "  (pehli vaar zara time lagda ae)", true);
+        waitText = waitMsg();
+        t0 = System.currentTimeMillis();
+        status(waitText, true);
         Grab.fetch(u,
                 info -> a.runOnUiThread(() -> {
                     busyUrl = "";

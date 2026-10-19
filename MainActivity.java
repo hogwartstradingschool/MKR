@@ -449,21 +449,23 @@ public class MainActivity extends Activity {
         abar.setPadding(d(8), d(6), d(8), d(6));
         abar.setBackground(U.pglass(this, dark, d(28)));
         abar.setElevation(d(8));
-        String[] ln = {"MOVE", "SHARE", "RENAME", "\u2715"};
-        for (int i = 0; i < 4; i++) {
+        String[] ln = {"MOVE", "SHARE", "RENAME", "DELETE", "\u2715"};
+        for (int i = 0; i < 5; i++) {
             TextView t = new TextView(this);
             t.setText(ln[i]);
             t.setTextColor(U.BROWN);
-            t.setTextSize(13);
+            t.setTextSize(12);
             t.setTypeface(Typeface.DEFAULT_BOLD);
             t.setGravity(Gravity.CENTER);
-            t.setPadding(d(8), d(12), d(8), d(12));
+            t.setPadding(d(4), d(12), d(4), d(12));
+            if (i == 3) t.setTextColor(0xFFC62828);
             U.bounce(t);
             final int k = i;
             t.setOnClickListener(v -> {
                 if (k == 0) move();
                 else if (k == 1) share();
                 else if (k == 2) rename();
+                else if (k == 3) delete();
                 else {
                     sel.clear();
                     refresh();
@@ -528,6 +530,68 @@ public class MainActivity extends Activity {
         in.putExtra("ids", ids);
         in.putExtra("i", Math.max(0, pos));
         startActivity(in);
+    }
+
+    // ================= delete =================
+    void delete() {
+        final List<V> l = selVideos();
+        if (l.isEmpty()) return;
+        LinearLayout c = new LinearLayout(this);
+        c.setOrientation(LinearLayout.VERTICAL);
+        TextView m = new TextView(this);
+        m.setText(l.size() + (l.size() == 1 ? " video" : " videos") + " hamesha ke liye delete hongi. Wapas nahi aayengi.");
+        m.setTextColor(U.BROWN);
+        m.setTextSize(14);
+        m.setPadding(d(4), 0, d(4), 0);
+        c.addView(m);
+        LinearLayout r = new LinearLayout(this);
+        r.setGravity(Gravity.END);
+        final Dialog[] dg = new Dialog[1];
+        TextView no = btn("Cancel", false), ok = btn("DELETE", true);
+        no.setOnClickListener(v -> dg[0].dismiss());
+        ok.setOnClickListener(v -> {
+            dg[0].dismiss();
+            doDelete(l);
+        });
+        LinearLayout.LayoutParams bl = new LinearLayout.LayoutParams(-2, -2);
+        bl.leftMargin = d(10);
+        r.addView(no);
+        r.addView(ok, bl);
+        LinearLayout.LayoutParams rl = new LinearLayout.LayoutParams(-1, -2);
+        rl.topMargin = d(14);
+        c.addView(r, rl);
+        dg[0] = sheet("Delete?", c);
+    }
+
+    void doDelete(final List<V> l) {
+        if (Build.VERSION.SDK_INT >= 30) {
+            try {
+                pend = () -> {
+                    tt(l.size() + " delete ho gayi");
+                    sel.clear();
+                    load();
+                };
+                startIntentSenderForResult(MediaStore.createDeleteRequest(getContentResolver(), uris(l)).getIntentSender(), 7, null, 0, 0, 0);
+            } catch (Exception e) {
+                pend = null;
+                tt("Permission nahi mili");
+            }
+            return;
+        }
+        int ok = 0;
+        for (V v : l) {
+            try {
+                if (getContentResolver().delete(v.uri, null, null) > 0) ok++;
+                else if (v.data != null && new File(v.data).delete()) {
+                    MediaScannerConnection.scanFile(this, new String[]{v.data}, null, null);
+                    ok++;
+                }
+            } catch (Exception ignored) {
+            }
+        }
+        tt(ok + " / " + l.size() + " delete hui");
+        sel.clear();
+        load();
     }
 
     // ================= select actions: share / move / rename =================

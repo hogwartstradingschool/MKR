@@ -216,9 +216,15 @@ object Grab {
             try {
                 ensureInit()
                 val h = j.height
-                fun req(emb: Boolean): YoutubeDLRequest {
+                // link check wali info dobara use karo => dobara extract nahi (bahut waqt bachta hai)
+                val infoFile = File(app.cacheDir, "g/${j.id}.json")
+                val ci = cache[j.url]
+                val useInfo = ci != null && System.currentTimeMillis() - ci.first < 1_200_000 &&
+                    runCatching { infoFile.writeText(ci.second.toString()); true }.getOrDefault(false)
+                fun req(emb: Boolean, li: Boolean): YoutubeDLRequest {
                     val rq = YoutubeDLRequest(j.url)
                     rq.addOption("--no-playlist"); rq.addOption("--no-warnings")
+                    if (li) rq.addOption("--load-info-json", infoFile.absolutePath)
                     if (h < 0) {
                         rq.addOption("-f", "ba/b"); rq.addOption("-x"); rq.addOption("--audio-format", "m4a")
                     } else {
@@ -235,14 +241,17 @@ object Grab {
                     rq.addOption("-o", dir.absolutePath + "/%(title).120B [%(id)s].%(ext)s")
                     return rq
                 }
-                fun go(emb: Boolean) = YoutubeDL.getInstance().execute(req(emb), pid) { p, eta, line ->
+                fun go(emb: Boolean, li: Boolean) = YoutubeDL.getInstance().execute(req(emb, li), pid) { p, eta, line ->
                     if (line.contains("[Merger]") || line.contains("[VideoRemuxer]") || line.contains("[ExtractAudio]")) {
                         j.merging = true; j.pct = 99.0; j.speed = 0.0; j.eta = 0.0
                     } else if (!j.merging && j.size <= 0) {
                         j.pct = minOf(99.0, p.toDouble().coerceAtLeast(0.0)); j.eta = eta.toDouble().coerceAtLeast(0.0)
                     }
                 }
-                try { go(false) } catch (e: Exception) { if (j.status == "running" && ageGate(e)) go(true) else throw e }
+                fun attempt(li: Boolean) {
+                    try { go(false, li) } catch (e: Exception) { if (j.status == "running" && ageGate(e)) go(true, li) else throw e }
+                }
+                try { attempt(useInfo) } catch (e: Exception) { if (useInfo && j.status == "running") attempt(false) else throw e }
                 if (j.status != "running") return@Thread
                 val f = dir.listFiles()?.filter { !it.name.endsWith(".part") && !it.name.endsWith(".ytdl") && !it.name.startsWith(".") && it.length() > 0 }
                     ?.maxByOrNull { it.length() } ?: throw IOException("File nahi bani")
@@ -257,6 +266,7 @@ object Grab {
                 }
             } finally {
                 mon.interrupt()
+                File(app.cacheDir, "g/${j.id}.json").delete()
                 if (j.status == "done" || j.status == "canceled") dir.deleteRecursively()
             }
         }.start()
